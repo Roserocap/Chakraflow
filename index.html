@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChakraFlow</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --accent-color: #2563eb;
+            --card-bg: #f8f9fa;
+            --border-color: #e5e7eb;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --logo-color: #1a1a1a;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0a0a0a;
+            --text-color: #ffffff;
+            --accent-color: #3b82f6;
+            --card-bg: #1a1a1a;
+            --border-color: #2a2a2a;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --logo-color: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: var(--transition);
+            line-height: 1.6;
+        }
+
+        header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 1000;
+    padding: 0.8rem 2rem; /* Уменьшили padding для компактности */
+    transition: var(--transition);
+    overflow: visible; /* Важно: разрешаем содержимому выходить за пределы */
+}
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            min-height: 60px;
+        }
+
+        .logo-container {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo-img {
+    width: 180px; /* Уменьшили с 180px до 120px */
+    height: auto;
+    max-height: 150px; /* Ограничение по высоте */
+    object-fit: contain;
+}
+
+/* Логика автоматического переключения в зависимости от темы */
+.logo-dark { display: none; }
+
+[data-theme="dark"] .logo-light { display: none; }
+[data-theme="dark"] .logo-dark { display: block; }
+
+        .controls {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .theme-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: var(--transition);
+            color: var(--text-color);
+        }
+
+        .theme-btn:hover {
+            background: var(--card-bg);
+            transform: scale(1.05);
+        }
+
+        .theme-btn svg { width: 22px; height: 22px; }
+
+        [data-theme="light"] .theme-btn .icon-moon { display: none; }
+        [data-theme="dark"] .theme-btn .icon-sun { display: none; }
+
+        .language-selector { position: relative; }
+
+        .lang-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.5rem 0.9rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .lang-btn:hover { background: var(--card-bg); }
+
+        .lang-btn .flag {
+            width: 22px;
+            height: 15px;
+            object-fit: cover;
+            border-radius: 2px;
+        }
+
+        .lang-btn .chevron {
+            width: 14px;
+            height: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .lang-btn.open .chevron { transform: rotate(180deg); }
+
+        .lang-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 10px 30px var(--shadow);
+            min-width: 170px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.25s ease;
+            z-index: 1001;
+        }
+
+        .lang-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .lang-option {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            padding: 0.7rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+
+        .lang-option:hover { background: var(--card-bg); }
+
+        .lang-option .flag {
+            width: 24px;
+            height: 16px;
+            object-fit: cover;
+            border-radius: 2px;
+        }
+
+        .lang-option.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        nav {
+    margin-top: 120px; /* Уменьшили с 140px, так как логотип теперь меньше */
+    padding: 1rem 2rem;
+    background-color: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+    position: relative;
+    z-index: 999; /* Ниже header, но выше контента */
+}
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 1.2rem;
+            border-radius: 20px;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        section {
+            display: none;
+            padding: 4rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease;
+        }
+
+        section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .about-hero {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 4rem;
+        }
+
+        .about-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .about-text h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 1.5rem;
+            line-height: 1.3;
+            text-align: center;
+        }
+
+        .about-text p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            text-align: center;
+        }
+
+        .cta-button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+
+        .about-image {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .about-image img {
+            max-width: 550px;
+            width: 100%;
+            height: auto;
+        }
+
+        @media (max-width: 968px) {
+    .about-hero { grid-template-columns: 1fr; gap: 2rem; }
+
+    .header-content {
+        flex-direction: column;
+        gap: 0.5rem;
+        padding: 0.5rem 0;
+    }
+
+    .logo-container {
+        position: static;
+        transform: none;
+        order: -1; /* Логотип сверху */
+    }
+
+    .logo-img {
+        width: 100px; /* Ещё меньше на мобильных */
+        max-height: 60px;
+    }
+
+    .controls {
+        margin-left: 0;
+        width: 100%;
+        justify-content: center;
+    }
+
+    nav {
+        margin-top: 100px; /* Меньше отступ на мобильных */
+    }
+
+    .chakras-grid { grid-template-columns: 1fr; }
+    .activation-tabs { flex-direction: column; }
+
+    .cookie-content { flex-direction: column; text-align: center; }
+}
+
+        .chakras-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .chakra-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .chakra-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px var(--shadow);
+        }
+
+        .chakra-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chakra-color {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .chakra-title { font-size: 1.4rem; font-weight: 500; }
+        .chakra-subtitle { font-size: 0.9rem; opacity: 0.7; }
+
+        .chakra-info { 
+            margin-bottom: 0.8rem;
+            line-height: 1.5;
+        }
+        
+        .chakra-info strong { 
+            color: var(--accent-color);
+            display: inline-block;
+            min-width: 140px;
+        }
+
+        .activation-instruction {
+            background: var(--card-bg);
+            border-left: 4px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin: 2rem auto 3rem;
+            max-width: 900px;
+            font-size: 1.05rem;
+            line-height: 1.7;
+            opacity: 0.95;
+        }
+
+        .activation-instruction .icon {
+            display: inline-block;
+            margin-right: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .activation-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            margin-top: 2rem;
+        }
+
+        .activation-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 120px;
+            padding: 1rem;
+            background: var(--bg-color);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .tab::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+        }
+
+        .tab[data-chakra="1"]::before { background: #dc2626; }
+        .tab[data-chakra="2"]::before { background: #ea580c; }
+        .tab[data-chakra="3"]::before { background: #eab308; }
+        .tab[data-chakra="4"]::before { background: #16a34a; }
+        .tab[data-chakra="5"]::before { background: #0ea5e9; }
+        .tab[data-chakra="6"]::before { background: #6366f1; }
+        .tab[data-chakra="7"]::before { background: #a855f7; }
+
+        .tab:hover { transform: translateY(-2px); box-shadow: 0 4px 15px var(--shadow); }
+        .tab.active { border-color: var(--accent-color); }
+
+        .tab-name { font-weight: 500; margin-bottom: 0.3rem; }
+        .tab-frequency { font-size: 0.85rem; opacity: 0.7; }
+
+        .activation-display {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+        }
+
+        .chakra-visual {
+            width: 450px;
+            height: 450px;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chakra-core {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            z-index: 10;
+        }
+
+        .chakra-wave {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            opacity: 0;
+            transform: scale(0.2);
+        }
+
+        .chakra-wave.active { animation: pulse 3s infinite ease-out; }
+
+        @keyframes pulse {
+            0% { transform: scale(0.15); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .chakra-wave:nth-child(2) { animation-delay: 0s; }
+        .chakra-wave:nth-child(3) { animation-delay: 1s; }
+        .chakra-wave:nth-child(4) { animation-delay: 2s; }
+
+        .activation-controls { text-align: center; margin-top: 2rem; }
+
+        .activate-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .activate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+
+        footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 3rem 2rem;
+            margin-top: 4rem;
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 3rem;
+        }
+
+        .footer-section h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        .footer-section p, .footer-section a {
+            opacity: 0.8;
+            margin-bottom: 0.5rem;
+            display: block;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .footer-section a:hover { color: var(--accent-color); }
+
+        .contact-form input, .contact-form textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        .contact-form button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .contact-form button:hover { transform: translateY(-2px); }
+
+        .cookie-banner {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 1.5rem 2rem;
+            display: none;
+            z-index: 999;
+            box-shadow: 0 -4px 20px var(--shadow);
+        }
+
+        .cookie-banner.show { display: block; }
+
+        .cookie-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .cookie-text { flex: 1; }
+
+        .cookie-buttons { display: flex; gap: 1rem; }
+
+        .cookie-btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .cookie-accept { background: var(--accent-color); color: white; }
+        .cookie-decline { background: var(--border-color); color: var(--text-color); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal.show { display: flex; }
+
+        .modal-content {
+            background: var(--bg-color);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 968px) {
+            .about-hero { grid-template-columns: 1fr; gap: 2rem; }
+
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .logo-container {
+                position: static;
+                transform: none;
+            }
+
+            .controls { margin-left: 0; }
+
+            nav { margin-top: 200px; }
+
+            .chakras-grid { grid-template-columns: 1fr; }
+            .activation-tabs { flex-direction: column; }
+
+            .cookie-content { flex-direction: column; text-align: center; }
+        }
+/* Адаптация изображения под тёмную тему */
+[data-theme="dark"] .about-image img {
+    filter: invert(1) hue-rotate(180deg) brightness(1.1);
+}
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="logo-container">
+    <img src="logo-black.jpeg" alt="ChakraFlow" class="logo-img logo-light">
+    <img src="logo-white.jpeg" alt="ChakraFlow" class="logo-img logo-dark">
+</div>
+            <div class="controls">
+                <button class="theme-btn" id="themeToggle" aria-label="Toggle theme">
+                    <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                    <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+                <div class="language-selector">
+                    <button class="lang-btn" id="langToggle" aria-label="Select language">
+                        <img id="currentLangFlag" class="flag" src="" alt="">
+                        <span id="currentLangCode">EN</span>
+                        <svg class="chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="lang-dropdown" id="langDropdown">
+                        <div class="lang-option" data-lang="en"><img class="flag" src="https://flagcdn.com/w40/us.png" alt="US"> English</div>
+                        <div class="lang-option" data-lang="es"><img class="flag" src="https://flagcdn.com/w40/es.png" alt="ES"> Español</div>
+                        <div class="lang-option" data-lang="it"><img class="flag" src="https://flagcdn.com/w40/it.png" alt="IT"> Italiano</div>
+                        <div class="lang-option" data-lang="fr"><img class="flag" src="https://flagcdn.com/w40/fr.png" alt="FR"> Français</div>
+                        <div class="lang-option" data-lang="de"><img class="flag" src="https://flagcdn.com/w40/de.png" alt="DE"> Deutsch</div>
+                        <div class="lang-option" data-lang="pt"><img class="flag" src="https://flagcdn.com/w40/pt.png" alt="PT"> Português</div>
+                        <div class="lang-option" data-lang="ru"><img class="flag" src="https://flagcdn.com/w40/ru.png" alt="RU"> Русский</div>
+                        <div class="lang-option" data-lang="zh"><img class="flag" src="https://flagcdn.com/w40/cn.png" alt="CN"> 中文</div>
+                        <div class="lang-option" data-lang="hi"><img class="flag" src="https://flagcdn.com/w40/in.png" alt="IN"> हिन्दी</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <div class="nav-content">
+            <a class="nav-link active" data-section="about" data-i18n="nav_about">О ПРОЕКТЕ</a>
+            <a class="nav-link" data-section="chakras" data-i18n="nav_chakras">ЧАКРЫ</a>
+            <a class="nav-link" data-section="activation" data-i18n="nav_activation">АКТИВАЦИЯ</a>
+        </div>
+    </nav>
+
+    <section id="about" class="active">
+        <div class="about-hero">
+            <div class="about-text">
+                <h1 data-i18n="about_title">ChakraFlow — это новый метод осознанной активации чакр</h1>
+                <p data-i18n="about_subtitle">Прокачайте свои энергетические центры, чтобы восстановить поток жизненной силы и обрести внутреннюю гармонию. Начните трансформацию прямо сейчас.</p>
+                <button class="cta-button" onclick="showSection('activation')" data-i18n="about_cta">Активировать чакры</button>
+            </div>
+            <div class="about-image">
+                <img src="lotus-figure.png" alt="Чакры человека в позе лотоса" style="max-width: 500px; width: 100%; height: auto;">
+            </div>
+        </div>
+        <div class="about-content">
+            <h2 data-i18n="about_what_title">Что такое чакры и зачем их активировать</h2>
+            <p data-i18n="about_what_p1">Слово «чакра» пришло из древнего санскрита и означает «колесо» или «вихрь». В индийской и тибетской традициях это энергетические центры тела, через которые протекает жизненная сила — прана. Первые упоминания о чакрах встречаются ещё в Ведах (около 1500 г. до н. э.), а позже их детально описали в трактатах по йоге и тантре.</p>
+            <p data-i18n="about_what_p2">Согласно этому учению, в человеке расположено 7 основных чакр — от основания позвоночника до макушки. Каждая из них отвечает за определённый аспект жизни: физическое здоровье, эмоции, интеллект, творчество, любовь, волю и связь с высшим «Я».</p>
+            <p data-i18n="about_what_p3">Когда чакры работают слаженно, энергия течёт свободно — вы чувствуете бодрость, ясность ума и внутреннюю опору. Если же баланс нарушен, возникают усталость, тревога, апатия или даже болезни. Активация чакр — это не мистика, а глубокая работа с собой, которая помогает вернуть цельность и гармонию в повседневной жизни.</p>
+            <p data-i18n="about_what_p4">ChakraFlow предлагает современный подход к этому древнему знанию, делая практику доступной каждому.</p>
+            <h2 style="margin-top: 3rem;" data-i18n="about_method_title">Метод ChakraFlow</h2>
+            <p data-i18n="about_method_p">Это простая и глубокая практика, которая занимает всего 7 минут. Для каждой из 7 чакр мы подобрали уникальную звуковую частоту и визуальный образ. Вам достаточно переключаться между центрами и уделять каждой ровно минуту — слушать резонирующий звук и фокусироваться на изображении. Это мягко «настраивает» чакру, снимает блоки и возвращает естественный поток энергии без сложных медитаций и многолетней подготовки.</p>
+        </div>
+    </section>
+
+    <section id="chakras">
+        <h2 style="text-align: center; font-size: 2.5rem; font-weight: 300; margin-bottom: 1rem;" data-i18n="chakras_title">Семь энергетических центров</h2>
+        <p style="text-align: center; font-size: 1.1rem; opacity: 0.8; margin-bottom: 3rem;" data-i18n="chakras_subtitle">Узнайте больше о каждой чакре и её влиянии на вашу жизнь</p>
+        <div class="chakras-grid" id="chakrasGrid"></div>
+    </section>
+
+    <section id="activation">
+        <h2 style="text-align: center; font-size: 2.5rem; font-weight: 300; margin-bottom: 1rem;" data-i18n="activation_title">Активация чакр</h2>
+        <p style="text-align: center; font-size: 1.1rem; opacity: 0.8; margin-bottom: 1rem;" data-i18n="activation_subtitle">Выберите чакру и начните практику</p>
+        
+        <div class="activation-instruction" data-i18n="activation_instruction">
+            <span class="icon">ℹ️</span> Установите комфортный для себя уровень громкости на устройстве, сделайте максимальную яркость экрана и направьте устройство в область активируемой чакры. Активацию лучше начинать с нижней чакры Муладхара и постепенно двигаться до верхней Сахасрара. Среднее время работы с чакрой 1 минута, но вы можете увеличить время по необходимости.
+        </div>
+
+        <div class="activation-container">
+            <div class="activation-tabs" id="activationTabs"></div>
+            <div class="activation-display">
+                <div class="chakra-visual" id="chakraVisual">
+                    <div class="chakra-core" id="chakraCore"></div>
+                    <div class="chakra-wave"></div>
+                    <div class="chakra-wave"></div>
+                    <div class="chakra-wave"></div>
+                </div>
+            </div>
+            <div class="activation-controls">
+                <button class="activate-btn" id="activateBtn" data-i18n="activation_btn">Начать активацию</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3 data-i18n="footer_about">О ChakraFlow</h3>
+                <p data-i18n="footer_about_text">Современный подход к древней практике активации чакр. Восстановите баланс энергии и обретите гармонию.</p>
+            </div>
+            <div class="footer-section">
+                <h3 data-i18n="footer_links">Ссылки</h3>
+                <a href="#" onclick="showPrivacyModal(); return false;" data-i18n="footer_privacy">Политика конфиденциальности</a>
+                <a href="#" onclick="showSection('about'); return false;" data-i18n="nav_about">О проекте</a>
+                <a href="#" onclick="showSection('chakras'); return false;" data-i18n="nav_chakras">Чакры</a>
+                <a href="#" onclick="showSection('activation'); return false;" data-i18n="nav_activation">Активация</a>
+            </div>
+            <div class="footer-section">
+                <h3 data-i18n="footer_contact">Связаться с нами</h3>
+                <form class="contact-form" onsubmit="handleContactSubmit(event)">
+                    <input type="email" placeholder="Email" required data-i18n-placeholder="footer_email_placeholder">
+                    <textarea placeholder="Сообщение" rows="4" required data-i18n-placeholder="footer_message_placeholder"></textarea>
+                    <button type="submit" data-i18n="footer_send">Отправить</button>
+                </form>
+            </div>
+        </div>
+    </footer>
+
+    <div class="cookie-banner" id="cookieBanner">
+        <div class="cookie-content">
+            <div class="cookie-text">
+                <p data-i18n="cookie_text">Мы используем файлы cookie для улучшения работы сайта.</p>
+            </div>
+            <div class="cookie-buttons">
+                <button class="cookie-btn cookie-accept" onclick="acceptCookies()" data-i18n="cookie_accept">Принять</button>
+                <button class="cookie-btn cookie-decline" onclick="declineCookies()" data-i18n="cookie_decline">Отклонить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="privacyModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closePrivacyModal()">&times;</button>
+            <h2 data-i18n="privacy_title">Политика конфиденциальности</h2>
+            <div style="margin-top: 2rem; line-height: 1.8;">
+                <p data-i18n="privacy_p1">ChakraFlow уважает вашу конфиденциальность. Мы собираем только необходимую информацию для улучшения работы сайта.</p>
+                <h3 style="margin-top: 1.5rem;" data-i18n="privacy_h1">Собираемая информация</h3>
+                <p data-i18n="privacy_p2">Мы используем файлы cookie для хранения предпочтений пользователя (язык, тема оформления).</p>
+                <h3 style="margin-top: 1.5rem;" data-i18n="privacy_h2">Использование данных</h3>
+                <p data-i18n="privacy_p3">Собранные данные используются исключительно для улучшения пользовательского опыта.</p>
+                <h3 style="margin-top: 1.5rem;" data-i18n="privacy_h3">Ваши права</h3>
+                <p data-i18n="privacy_p4">Вы можете в любой момент отказаться от использования файлов cookie в настройках браузера.</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+const translations = {
+    ru: {
+        nav_about: "О ПРОЕКТЕ", nav_chakras: "ЧАКРЫ", nav_activation: "АКТИВАЦИЯ",
+        about_title: "ChakraFlow — это новый метод осознанной активации чакр",
+        about_subtitle: "Прокачайте свои энергетические центры, чтобы восстановить поток жизненной силы и обрести внутреннюю гармонию. Начните трансформацию прямо сейчас.",
+        about_cta: "Активировать чакры",
+        about_what_title: "Что такое чакры и зачем их активировать",
+        about_what_p1: "Слово «чакра» пришло из древнего санскрита и означает «колесо» или «вихрь». В индийской и тибетской традициях это энергетические центры тела, через которые протекает жизненная сила — прана. Первые упоминания о чакрах встречаются ещё в Ведах (около 1500 г. до н. э.), а позже их детально описали в трактатах по йоге и тантре.",
+        about_what_p2: "Согласно этому учению, в человеке расположено 7 основных чакр — от основания позвоночника до макушки. Каждая из них отвечает за определённый аспект жизни: физическое здоровье, эмоции, интеллект, творчество, любовь, волю и связь с высшим «Я».",
+        about_what_p3: "Когда чакры работают слаженно, энергия течёт свободно — вы чувствуете бодрость, ясность ума и внутреннюю опору. Если же баланс нарушен, возникают усталость, тревога, апатия или даже болезни. Активация чакр — это не мистика, а глубокая работа с собой, которая помогает вернуть цельность и гармонию в повседневной жизни.",
+        about_what_p4: "ChakraFlow предлагает современный подход к этому древнему знанию, делая практику доступной каждому.",
+        about_method_title: "Метод ChakraFlow",
+        about_method_p: "Это простая и глубокая практика, которая занимает всего 7 минут. Для каждой из 7 чакр мы подобрали уникальную звуковую частоту и визуальный образ. Вам достаточно переключаться между центрами и уделять каждой ровно минуту — слушать резонирующий звук и фокусироваться на изображении. Это мягко «настраивает» чакру, снимает блоки и возвращает естественный поток энергии без сложных медитаций и многолетней подготовки.",
+        chakras_title: "Семь энергетических центров",
+        chakras_subtitle: "Узнайте больше о каждой чакре и её влиянии на вашу жизнь",
+        activation_title: "Активация чакр",
+        activation_subtitle: "Выберите чакру и начните практику",
+        activation_instruction: "Установите комфортный для себя уровень громкости на устройстве, сделайте максимальную яркость экрана и направьте устройство в область активируемой чакры. Активацию лучше начинать с нижней чакры Муладхара и постепенно двигаться до верхней Сахасрара. Среднее время работы с чакрой 1 минута, но вы можете увеличить время по необходимости.",
+        activation_btn: "Начать активацию", activation_stop: "Остановить",
+        footer_about: "О ChakraFlow",
+        footer_about_text: "Современный подход к древней практике активации чакр. Восстановите баланс энергии и обретите гармонию.",
+        footer_links: "Ссылки", footer_privacy: "Политика конфиденциальности",
+        footer_contact: "Связаться с нами",
+        footer_email_placeholder: "Email", footer_message_placeholder: "Сообщение", footer_send: "Отправить",
+        cookie_text: "Мы используем файлы cookie для улучшения работы сайта.",
+        cookie_accept: "Принять", cookie_decline: "Отклонить",
+        privacy_title: "Политика конфиденциальности",
+        privacy_p1: "ChakraFlow уважает вашу конфиденциальность. Мы собираем только необходимую информацию для улучшения работы сайта.",
+        privacy_h1: "Собираемая информация", privacy_p2: "Мы используем файлы cookie для хранения предпочтений пользователя (язык, тема оформления).",
+        privacy_h2: "Использование данных", privacy_p3: "Собранные данные используются исключительно для улучшения пользовательского опыта.",
+        privacy_h3: "Ваши права", privacy_p4: "Вы можете в любой момент отказаться от использования файлов cookie в настройках браузера.",
+        chakra_1_name: "Муладхара", chakra_1_subtitle: "Корневая чакра", chakra_1_color: "Красный",
+        chakra_1_location: "Основание позвоночника, промежность",
+        chakra_1_responsibility: "Базовое выживание, физическая безопасность, инстинкты, связь с родом и землёй.",
+        chakra_1_influence: "Даёт чувство устойчивости и защищённости. При дисбалансе — тревога, страх, проблемы с деньгами и здоровьем (ноги, кишечник, иммунитет).",
+        chakra_2_name: "Свадхистана", chakra_2_subtitle: "Сакральная чакра", chakra_2_color: "Оранжевый",
+        chakra_2_location: "Нижняя часть живота (на 3–4 см ниже пупка)",
+        chakra_2_responsibility: "Эмоции, удовольствие, творчество, сексуальность, чувствительность.",
+        chakra_2_influence: "Дарит радость жизни, гибкость и принятие себя. При блоке — апатия, подавленные эмоции, проблемы с репродуктивной системой и почками.",
+        chakra_3_name: "Манипура", chakra_3_subtitle: "Солнечное сплетение", chakra_3_color: "Жёлтый",
+        chakra_3_location: "Область солнечного сплетения (между пупком и грудиной)",
+        chakra_3_responsibility: "Личная сила, воля, самооценка, контроль, достижение целей.",
+        chakra_3_influence: "Даёт уверенность и внутренний стержень. При дисбалансе — неуверенность, гнев, проблемы с ЖКТ и пищеварением.",
+        chakra_4_name: "Анахата", chakra_4_subtitle: "Сердечная чакра", chakra_4_color: "Зелёный",
+        chakra_4_location: "Центр грудной клетки, область сердца",
+        chakra_4_responsibility: "Любовь, сострадание, принятие, эмпатия, прощение.",
+        chakra_4_influence: "Открывает способность любить и принимать мир. При блоке — одиночество, обиды, ревность, болезни сердца и лёгких.",
+        chakra_5_name: "Вишуддха", chakra_5_subtitle: "Горловая чакра", chakra_5_color: "Голубой",
+        chakra_5_location: "Горло, область шеи",
+        chakra_5_responsibility: "Самовыражение, коммуникация, истина, творческая речь.",
+        chakra_5_influence: "Помогает говорить правду и быть услышанным. При дисбалансе — страх высказываться, заикание, частые ангины, проблемы с щитовидкой.",
+        chakra_6_name: "Аджна", chakra_6_subtitle: "Третий глаз", chakra_6_color: "Индиго",
+        chakra_6_location: "Центр лба, между бровями",
+        chakra_6_responsibility: "Интуиция, ясновидение, воображение, мышление, внутреннее зрение.",
+        chakra_6_influence: "Развивает осознанность и способность видеть суть вещей. При блоке — спутанные мысли, головные боли, отсутствие интуиции, иллюзии.",
+        chakra_7_name: "Сахасрара", chakra_7_subtitle: "Коронная чакра", chakra_7_color: "Фиолетовый",
+        chakra_7_location: "Макушка головы",
+        chakra_7_responsibility: "Связь с высшим сознанием, просветление, духовность, единство со всем сущим.",
+        chakra_7_influence: "Приносит состояние покоя, смысл жизни и трансцендентный опыт. При блоке — депрессия, потерянность, оторванность от реальности.",
+        color: "Цвет", frequency: "Частота", location: "Расположение", responsibility: "За что отвечает", influence: "Влияние"
+    },
+    en: {
+        nav_about: "ABOUT", nav_chakras: "CHAKRAS", nav_activation: "ACTIVATION",
+        about_title: "ChakraFlow is a new method of conscious chakra activation",
+        about_subtitle: "Enhance your energy centers to restore the flow of life force and find inner harmony. Start your transformation now.",
+        about_cta: "Activate Chakras",
+        about_what_title: "What are chakras and why activate them",
+        about_what_p1: "The word 'chakra' comes from ancient Sanskrit and means 'wheel' or 'vortex'. In Indian and Tibetan traditions, these are energy centers of the body through which life force — prana — flows. The first mentions of chakras are found in the Vedas (around 1500 BC), and later they were detailed in treatises on yoga and tantra.",
+        about_what_p2: "According to this teaching, there are 7 main chakras in a person — from the base of the spine to the crown of the head. Each one is responsible for a certain aspect of life: physical health, emotions, intellect, creativity, love, will, and connection with the higher Self.",
+        about_what_p3: "When chakras work in harmony, energy flows freely — you feel vigor, clarity of mind, and inner support. If the balance is disrupted, fatigue, anxiety, apathy, or even illnesses arise. Chakra activation is not mysticism, but deep work with yourself that helps restore wholeness and harmony in everyday life.",
+        about_what_p4: "ChakraFlow offers a modern approach to this ancient knowledge, making the practice accessible to everyone.",
+        about_method_title: "The ChakraFlow Method",
+        about_method_p: "This is a simple and profound practice that takes only 7 minutes. For each of the 7 chakras, we have selected a unique sound frequency and visual image. You just need to switch between centers and spend exactly one minute on each — listen to the resonating sound and focus on the image. This gently 'tunes' the chakra, removes blocks, and restores the natural flow of energy without complex meditations and years of preparation.",
+        chakras_title: "Seven Energy Centers",
+        chakras_subtitle: "Learn more about each chakra and its influence on your life",
+        activation_title: "Chakra Activation",
+        activation_subtitle: "Choose a chakra and begin the practice",
+        activation_instruction: "Set a comfortable volume level on your device, maximize screen brightness, and direct the device toward the area of the chakra you are activating. It is best to start activation with the lower Muladhara chakra and gradually move up to the upper Sahasrara. The average working time with each chakra is 1 minute, but you can increase the time as needed.",
+        activation_btn: "Start Activation", activation_stop: "Stop",
+        footer_about: "About ChakraFlow",
+        footer_about_text: "A modern approach to the ancient practice of chakra activation. Restore energy balance and find harmony.",
+        footer_links: "Links", footer_privacy: "Privacy Policy",
+        footer_contact: "Contact Us",
+        footer_email_placeholder: "Email", footer_message_placeholder: "Message", footer_send: "Send",
+        cookie_text: "We use cookies to improve website performance.",
+        cookie_accept: "Accept", cookie_decline: "Decline",
+        privacy_title: "Privacy Policy",
+        privacy_p1: "ChakraFlow respects your privacy. We collect only necessary information to improve website performance.",
+        privacy_h1: "Information collected", privacy_p2: "We use cookies to store user preferences (language, theme).",
+        privacy_h2: "Data usage", privacy_p3: "Collected data is used exclusively to improve user experience.",
+        privacy_h3: "Your rights", privacy_p4: "You can refuse to use cookies at any time in your browser settings.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Root Chakra", chakra_1_color: "Red",
+        chakra_1_location: "Base of the spine, perineum",
+        chakra_1_responsibility: "Basic survival, physical safety, instincts, connection with family and earth.",
+        chakra_1_influence: "Provides a sense of stability and security. When imbalanced — anxiety, fear, problems with money and health (legs, intestines, immunity).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Sacral Chakra", chakra_2_color: "Orange",
+        chakra_2_location: "Lower abdomen (3-4 cm below the navel)",
+        chakra_2_responsibility: "Emotions, pleasure, creativity, sexuality, sensitivity.",
+        chakra_2_influence: "Brings joy of life, flexibility and self-acceptance. When blocked — apathy, suppressed emotions, problems with reproductive system and kidneys.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Solar Plexus", chakra_3_color: "Yellow",
+        chakra_3_location: "Solar plexus area (between navel and sternum)",
+        chakra_3_responsibility: "Personal power, will, self-esteem, control, achieving goals.",
+        chakra_3_influence: "Gives confidence and inner core. When imbalanced — insecurity, anger, problems with gastrointestinal tract and digestion.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Heart Chakra", chakra_4_color: "Green",
+        chakra_4_location: "Center of the chest, heart area",
+        chakra_4_responsibility: "Love, compassion, acceptance, empathy, forgiveness.",
+        chakra_4_influence: "Opens the ability to love and accept the world. When blocked — loneliness, resentment, jealousy, heart and lung diseases.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Throat Chakra", chakra_5_color: "Light Blue",
+        chakra_5_location: "Throat, neck area",
+        chakra_5_responsibility: "Self-expression, communication, truth, creative speech.",
+        chakra_5_influence: "Helps to speak the truth and be heard. When imbalanced — fear of speaking, stuttering, frequent sore throats, thyroid problems.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Third Eye", chakra_6_color: "Indigo",
+        chakra_6_location: "Center of the forehead, between the eyebrows",
+        chakra_6_responsibility: "Intuition, clairvoyance, imagination, thinking, inner vision.",
+        chakra_6_influence: "Develops awareness and the ability to see the essence of things. When blocked — confused thoughts, headaches, lack of intuition, illusions.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Crown Chakra", chakra_7_color: "Violet",
+        chakra_7_location: "Top of the head",
+        chakra_7_responsibility: "Connection with higher consciousness, enlightenment, spirituality, unity with all existence.",
+        chakra_7_influence: "Brings a state of peace, meaning of life and transcendent experience. When blocked — depression, lostness, detachment from reality.",
+        color: "Color", frequency: "Frequency", location: "Location", responsibility: "Responsible for", influence: "Influence"
+    },
+    es: {
+        nav_about: "ACERCA DE", nav_chakras: "CHAKRAS", nav_activation: "ACTIVACIÓN",
+        about_title: "ChakraFlow es un nuevo método de activación consciente de chakras",
+        about_subtitle: "Potencia tus centros energéticos para restaurar el flujo de fuerza vital y encontrar la armonía interior. Comienza tu transformación ahora.",
+        about_cta: "Activar Chakras",
+        about_what_title: "Qué son los chakras y por qué activarlos",
+        about_what_p1: "La palabra 'chakra' proviene del antiguo sánscrito y significa 'rueda' o 'vórtice'. En las tradiciones india y tibetana, son centros energéticos del cuerpo a través de los cuales fluye la fuerza vital — prana. Las primeras menciones de los chakras se encuentran en los Vedas (alrededor del 1500 a.C.), y más tarde se detallaron en tratados de yoga y tantra.",
+        about_what_p2: "Según esta enseñanza, hay 7 chakras principales en una persona — desde la base de la columna vertebral hasta la coronilla. Cada uno es responsable de un cierto aspecto de la vida: salud física, emociones, intelecto, creatividad, amor, voluntad y conexión con el Ser superior.",
+        about_what_p3: "Cuando los chakras trabajan en armonía, la energía fluye libremente — sientes vigor, claridad mental y apoyo interior. Si el equilibrio se altera, surgen fatiga, ansiedad, apatía o incluso enfermedades. La activación de chakras no es misticismo, sino un trabajo profundo contigo mismo que ayuda a restaurar la integridad y la armonía en la vida cotidiana.",
+        about_what_p4: "ChakraFlow ofrece un enfoque moderno de este conocimiento antiguo, haciendo la práctica accesible para todos.",
+        about_method_title: "El Método ChakraFlow",
+        about_method_p: "Esta es una práctica simple y profunda que toma solo 7 minutos. Para cada uno de los 7 chakras, hemos seleccionado una frecuencia de sonido única y una imagen visual. Solo necesitas cambiar entre centros y dedicar exactamente un minuto a cada uno — escuchar el sonido resonante y enfocarte en la imagen. Esto 'afina' suavemente el chakra, elimina bloqueos y restaura el flujo natural de energía sin meditaciones complejas y años de preparación.",
+        chakras_title: "Siete Centros Energéticos",
+        chakras_subtitle: "Aprende más sobre cada chakra y su influencia en tu vida",
+        activation_title: "Activación de Chakras",
+        activation_subtitle: "Elige un chakra y comienza la práctica",
+        activation_instruction: "Ajusta un nivel de volumen cómodo en tu dispositivo, maximiza el brillo de la pantalla y dirige el dispositivo hacia el área del chakra que estás activando. Es mejor comenzar la activación con el chakra inferior Muladhara e ir subiendo gradualmente hasta el superior Sahasrara. El tiempo promedio de trabajo con cada chakra es de 1 minuto, pero puedes aumentarlo según sea necesario.",
+        activation_btn: "Iniciar Activación", activation_stop: "Detener",
+        footer_about: "Acerca de ChakraFlow",
+        footer_about_text: "Un enfoque moderno de la práctica antigua de activación de chakras.",
+        footer_links: "Enlaces", footer_privacy: "Política de Privacidad",
+        footer_contact: "Contáctanos",
+        footer_email_placeholder: "Correo electrónico", footer_message_placeholder: "Mensaje", footer_send: "Enviar",
+        cookie_text: "Usamos cookies para mejorar el rendimiento del sitio web.",
+        cookie_accept: "Aceptar", cookie_decline: "Rechazar",
+        privacy_title: "Política de Privacidad",
+        privacy_p1: "ChakraFlow respeta tu privacidad.",
+        privacy_h1: "Información recopilada", privacy_p2: "Usamos cookies para almacenar preferencias del usuario.",
+        privacy_h2: "Uso de datos", privacy_p3: "Los datos recopilados se utilizan exclusivamente para mejorar la experiencia del usuario.",
+        privacy_h3: "Tus derechos", privacy_p4: "Puedes negarte a usar cookies en cualquier momento.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Chakra Raíz", chakra_1_color: "Rojo",
+        chakra_1_location: "Base de la columna vertebral, perineo",
+        chakra_1_responsibility: "Supervivencia básica, seguridad física, instintos, conexión con la familia y la tierra.",
+        chakra_1_influence: "Proporciona sensación de estabilidad y seguridad. Cuando está desequilibrado — ansiedad, miedo, problemas con dinero y salud (piernas, intestinos, inmunidad).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Chakra Sacro", chakra_2_color: "Naranja",
+        chakra_2_location: "Abdomen inferior (3-4 cm debajo del ombligo)",
+        chakra_2_responsibility: "Emociones, placer, creatividad, sexualidad, sensibilidad.",
+        chakra_2_influence: "Brinda alegría de vivir, flexibilidad y autoaceptación. Cuando está bloqueado — apatía, emociones reprimidas, problemas con sistema reproductivo y riñones.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Plexo Solar", chakra_3_color: "Amarillo",
+        chakra_3_location: "Área del plexo solar (entre ombligo y esternón)",
+        chakra_3_responsibility: "Poder personal, voluntad, autoestima, control, logro de metas.",
+        chakra_3_influence: "Da confianza y núcleo interno. Cuando está desequilibrado — inseguridad, ira, problemas con tracto gastrointestinal y digestión.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Chakra del Corazón", chakra_4_color: "Verde",
+        chakra_4_location: "Centro del pecho, área del corazón",
+        chakra_4_responsibility: "Amor, compasión, aceptación, empatía, perdón.",
+        chakra_4_influence: "Abre la capacidad de amar y aceptar el mundo. Cuando está bloqueado — soledad, resentimiento, celos, enfermedades del corazón y pulmones.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Chakra de la Garganta", chakra_5_color: "Azul claro",
+        chakra_5_location: "Garganta, área del cuello",
+        chakra_5_responsibility: "Autoexpresión, comunicación, verdad, habla creativa.",
+        chakra_5_influence: "Ayuda a decir la verdad y ser escuchado. Cuando está desequilibrado — miedo a hablar, tartamudez, dolores de garganta frecuentes, problemas de tiroides.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Tercer Ojo", chakra_6_color: "Índigo",
+        chakra_6_location: "Centro de la frente, entre las cejas",
+        chakra_6_responsibility: "Intuición, clarividencia, imaginación, pensamiento, visión interior.",
+        chakra_6_influence: "Desarrolla la conciencia y la capacidad de ver la esencia de las cosas. Cuando está bloqueado — pensamientos confusos, dolores de cabeza, falta de intuición, ilusiones.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Chakra Corona", chakra_7_color: "Violeta",
+        chakra_7_location: "Parte superior de la cabeza",
+        chakra_7_responsibility: "Conexión con la conciencia superior, iluminación, espiritualidad, unidad con toda la existencia.",
+        chakra_7_influence: "Brinda estado de paz, sentido de la vida y experiencia trascendente. Cuando está bloqueado — depresión, sensación de pérdida, desapego de la realidad.",
+        color: "Color", frequency: "Frecuencia", location: "Ubicación", responsibility: "Responsable de", influence: "Influencia"
+    },
+    it: {
+        nav_about: "INFO", nav_chakras: "CHAKRA", nav_activation: "ATTIVAZIONE",
+        about_title: "ChakraFlow è un nuovo metodo di attivazione consapevole dei chakra",
+        about_subtitle: "Potenzia i tuoi centri energetici per ripristinare il flusso di forza vitale e trovare l'armonia interiore.",
+        about_cta: "Attiva Chakra",
+        about_what_title: "Cosa sono i chakra e perché attivarli",
+        about_what_p1: "La parola 'chakra' proviene dall'antico sanscrito e significa 'ruota' o 'vortice'. Nelle tradizioni indiana e tibetana, sono centri energetici del corpo attraverso i quali scorre la forza vitale — prana. Le prime menzioni dei chakra si trovano nei Veda (intorno al 1500 a.C.), e successivamente furono dettagliati in trattati di yoga e tantra.",
+        about_what_p2: "Secondo questo insegnamento, ci sono 7 chakra principali in una persona — dalla base della colonna vertebrale alla sommità della testa. Ognuno è responsabile di un certo aspetto della vita: salute fisica, emozioni, intelletto, creatività, amore, volontà e connessione con il Sé superiore.",
+        about_what_p3: "Quando i chakra lavorano in armonia, l'energia scorre liberamente — ti senti vigoroso, con chiarezza mentale e supporto interiore. Se l'equilibrio è alterato, sorgono affaticamento, ansia, apatia o persino malattie. L'attivazione dei chakra non è misticismo, ma un lavoro profondo con te stesso che aiuta a ripristinare l'integrità e l'armonia nella vita quotidiana.",
+        about_what_p4: "ChakraFlow offre un approccio moderno a questa antica conoscenza, rendendo la pratica accessibile a tutti.",
+        about_method_title: "Il Metodo ChakraFlow",
+        about_method_p: "Questa è una pratica semplice e profonda che richiede solo 7 minuti. Per ognuno dei 7 chakra, abbiamo selezionato una frequenza sonora unica e un'immagine visiva. Devi solo passare tra i centri e dedicare esattamente un minuto a ciascuno — ascoltare il suono risonante e concentrarti sull'immagine. Questo 'sintonizza' delicatamente il chakra, rimuove i blocchi e ripristina il flusso naturale di energia senza meditazioni complesse e anni di preparazione.",
+        chakras_title: "Sette Centri Energetici",
+        chakras_subtitle: "Scopri di più su ogni chakra e la sua influenza sulla tua vita",
+        activation_title: "Attivazione dei Chakra",
+        activation_subtitle: "Scegli un chakra e inizia la pratica",
+        activation_instruction: "Imposta un livello di volume confortevole sul tuo dispositivo, massimizza la luminosità dello schermo e indirizza il dispositivo verso l'area del chakra che stai attivando. È meglio iniziare l'attivazione con il chakra inferiore Muladhara e salire gradualmente fino al superiore Sahasrara. Il tempo medio di lavoro con ogni chakra è di 1 minuto, ma puoi aumentarlo se necessario.",
+        activation_btn: "Inizia Attivazione", activation_stop: "Ferma",
+        footer_about: "Info su ChakraFlow",
+        footer_about_text: "Un approccio moderno all'antica pratica di attivazione dei chakra.",
+        footer_links: "Link", footer_privacy: "Politica sulla Privacy",
+        footer_contact: "Contattaci",
+        footer_email_placeholder: "Email", footer_message_placeholder: "Messaggio", footer_send: "Invia",
+        cookie_text: "Utilizziamo i cookie per migliorare le prestazioni del sito web.",
+        cookie_accept: "Accetta", cookie_decline: "Rifiuta",
+        privacy_title: "Politica sulla Privacy",
+        privacy_p1: "ChakraFlow rispetta la tua privacy.",
+        privacy_h1: "Informazioni raccolte", privacy_p2: "Utilizziamo i cookie per memorizzare le preferenze dell'utente.",
+        privacy_h2: "Utilizzo dei dati", privacy_p3: "I dati raccolti sono utilizzati esclusivamente per migliorare l'esperienza dell'utente.",
+        privacy_h3: "I tuoi diritti", privacy_p4: "Puoi rifiutarti di utilizzare i cookie in qualsiasi momento.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Chakra della Radice", chakra_1_color: "Rosso",
+        chakra_1_location: "Base della colonna vertebrale, perineo",
+        chakra_1_responsibility: "Sopravvivenza di base, sicurezza fisica, istinti, connessione con la famiglia e la terra.",
+        chakra_1_influence: "Fornisce senso di stabilità e sicurezza. Quando squilibrato — ansia, paura, problemi con denaro e salute (gambe, intestino, immunità).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Chakra Sacrale", chakra_2_color: "Arancione",
+        chakra_2_location: "Addome inferiore (3-4 cm sotto l'ombelico)",
+        chakra_2_responsibility: "Emozioni, piacere, creatività, sessualità, sensibilità.",
+        chakra_2_influence: "Porta gioia di vivere, flessibilità e autoaccettazione. Quando bloccato — apatia, emozioni represse, problemi con sistema riproduttivo e reni.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Plesso Solare", chakra_3_color: "Giallo",
+        chakra_3_location: "Area del plesso solare (tra ombelico e sterno)",
+        chakra_3_responsibility: "Potere personale, volontà, autostima, controllo, raggiungimento degli obiettivi.",
+        chakra_3_influence: "Dà fiducia e nucleo interiore. Quando squilibrato — insicurezza, rabbia, problemi con tratto gastrointestinale e digestione.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Chakra del Cuore", chakra_4_color: "Verde",
+        chakra_4_location: "Centro del petto, area del cuore",
+        chakra_4_responsibility: "Amore, compassione, accettazione, empatia, perdono.",
+        chakra_4_influence: "Apre la capacità di amare e accettare il mondo. Quando bloccato — solitudine, risentimento, gelosia, malattie cardiache e polmonari.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Chakra della Gola", chakra_5_color: "Azzurro",
+        chakra_5_location: "Gola, area del collo",
+        chakra_5_responsibility: "Autoespressione, comunicazione, verità, parola creativa.",
+        chakra_5_influence: "Aiuta a dire la verità e essere ascoltati. Quando squilibrato — paura di parlare, balbuzie, mal di gola frequenti, problemi alla tiroide.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Terzo Occhio", chakra_6_color: "Indaco",
+        chakra_6_location: "Centro della fronte, tra le sopracciglia",
+        chakra_6_responsibility: "Intuizione, chiaroveggenza, immaginazione, pensiero, visione interiore.",
+        chakra_6_influence: "Sviluppa la consapevolezza e la capacità di vedere l'essenza delle cose. Quando bloccato — pensieri confusi, mal di testa, mancanza di intuizione, illusioni.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Chakra della Corona", chakra_7_color: "Viola",
+        chakra_7_location: "Parte superiore della testa",
+        chakra_7_responsibility: "Connessione con la coscienza superiore, illuminazione, spiritualità, unità con tutta l'esistenza.",
+        chakra_7_influence: "Porta stato di pace, senso della vita ed esperienza trascendente. Quando bloccato — depressione, senso di smarrimento, distacco dalla realtà.",
+        color: "Colore", frequency: "Frequenza", location: "Posizione", responsibility: "Responsabile di", influence: "Influenza"
+    },
+    fr: {
+        nav_about: "À PROPOS", nav_chakras: "CHAKRAS", nav_activation: "ACTIVATION",
+        about_title: "ChakraFlow est une nouvelle méthode d'activation consciente des chakras",
+        about_subtitle: "Renforcez vos centres énergétiques pour restaurer le flux de force vitale et trouver l'harmonie intérieure.",
+        about_cta: "Activer les Chakras",
+        about_what_title: "Que sont les chakras et pourquoi les activer",
+        about_what_p1: "Le mot 'chakra' vient du sanskrit ancien et signifie 'roue' ou 'vortex'. Dans les traditions indienne et tibétaine, ce sont des centres énergétiques du corps à travers lesquels circule la force vitale — prana. Les premières mentions des chakras se trouvent dans les Vedas (vers 1500 av. J.-C.), et plus tard ils ont été détaillés dans des traités de yoga et de tantra.",
+        about_what_p2: "Selon cet enseignement, il y a 7 chakras principaux chez une personne — de la base de la colonne vertébrale au sommet de la tête. Chacun est responsable d'un certain aspect de la vie : santé physique, émotions, intellect, créativité, amour, volonté et connexion avec le Soi supérieur.",
+        about_what_p3: "Quand les chakras travaillent en harmonie, l'énergie circule librement — vous vous sentez vigoureux, avec clarté mentale et soutien intérieur. Si l'équilibre est perturbé, fatigue, anxiété, apathie ou même maladies surviennent. L'activation des chakras n'est pas du mysticisme, mais un travail profond avec soi-même qui aide à restaurer l'intégrité et l'harmonie dans la vie quotidienne.",
+        about_what_p4: "ChakraFlow offre une approche moderne de cette connaissance ancienne, rendant la pratique accessible à tous.",
+        about_method_title: "La Méthode ChakraFlow",
+        about_method_p: "C'est une pratique simple et profonde qui ne prend que 7 minutes. Pour chacun des 7 chakras, nous avons sélectionné une fréquence sonore unique et une image visuelle. Il vous suffit de passer d'un centre à l'autre et de consacrer exactement une minute à chacun — écouter le son résonnant et se concentrer sur l'image. Cela 'accorde' doucement le chakra, élimine les blocages et restaure le flux naturel d'énergie sans méditations complexes et années de préparation.",
+        chakras_title: "Sept Centres Énergétiques",
+        chakras_subtitle: "En savoir plus sur chaque chakra et son influence sur votre vie",
+        activation_title: "Activation des Chakras",
+        activation_subtitle: "Choisissez un chakra et commencez la pratique",
+        activation_instruction: "Réglez un niveau de volume confortable sur votre appareil, maximisez la luminosité de l'écran et dirigez l'appareil vers la zone du chakra que vous activez. Il est préférable de commencer l'activation par le chakra inférieur Muladhara et de monter progressivement jusqu'au supérieur Sahasrara. Le temps moyen de travail avec chaque chakra est de 1 minute, mais vous pouvez l'augmenter si nécessaire.",
+        activation_btn: "Commencer l'Activation", activation_stop: "Arrêter",
+        footer_about: "À propos de ChakraFlow",
+        footer_about_text: "Une approche moderne de l'ancienne pratique d'activation des chakras.",
+        footer_links: "Liens", footer_privacy: "Politique de Confidentialité",
+        footer_contact: "Contactez-nous",
+        footer_email_placeholder: "Email", footer_message_placeholder: "Message", footer_send: "Envoyer",
+        cookie_text: "Nous utilisons des cookies pour améliorer les performances du site.",
+        cookie_accept: "Accepter", cookie_decline: "Refuser",
+        privacy_title: "Politique de Confidentialité",
+        privacy_p1: "ChakraFlow respecte votre vie privée.",
+        privacy_h1: "Informations collectées", privacy_p2: "Nous utilisons des cookies pour stocker les préférences de l'utilisateur.",
+        privacy_h2: "Utilisation des données", privacy_p3: "Les données collectées sont utilisées exclusivement pour améliorer l'expérience utilisateur.",
+        privacy_h3: "Vos droits", privacy_p4: "Vous pouvez refuser d'utiliser des cookies à tout moment.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Chakra Racine", chakra_1_color: "Rouge",
+        chakra_1_location: "Base de la colonne vertébrale, périnée",
+        chakra_1_responsibility: "Survie de base, sécurité physique, instincts, connexion avec la famille et la terre.",
+        chakra_1_influence: "Procure un sentiment de stabilité et de sécurité. Quand déséquilibré — anxiété, peur, problèmes d'argent et de santé (jambes, intestins, immunité).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Chakra Sacré", chakra_2_color: "Orange",
+        chakra_2_location: "Bas-ventre (3-4 cm sous le nombril)",
+        chakra_2_responsibility: "Émotions, plaisir, créativité, sexualité, sensibilité.",
+        chakra_2_influence: "Apporte joie de vivre, flexibilité et acceptation de soi. Quand bloqué — apathie, émotions refoulées, problèmes avec système reproducteur et reins.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Plexus Solaire", chakra_3_color: "Jaune",
+        chakra_3_location: "Zone du plexus solaire (entre nombril et sternum)",
+        chakra_3_responsibility: "Pouvoir personnel, volonté, estime de soi, contrôle, atteinte des objectifs.",
+        chakra_3_influence: "Donne confiance et noyau intérieur. Quand déséquilibré — insécurité, colère, problèmes avec tractus gastro-intestinal et digestion.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Chakra du Cœur", chakra_4_color: "Vert",
+        chakra_4_location: "Centre de la poitrine, zone du cœur",
+        chakra_4_responsibility: "Amour, compassion, acceptation, empathie, pardon.",
+        chakra_4_influence: "Ouvre la capacité d'aimer et d'accepter le monde. Quand bloqué — solitude, ressentiment, jalousie, maladies cardiaques et pulmonaires.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Chakra de la Gorge", chakra_5_color: "Bleu clair",
+        chakra_5_location: "Gorge, zone du cou",
+        chakra_5_responsibility: "Expression de soi, communication, vérité, parole créative.",
+        chakra_5_influence: "Aide à dire la vérité et être entendu. Quand déséquilibré — peur de parler, bégaiement, maux de gorge fréquents, problèmes de thyroïde.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Troisième Œil", chakra_6_color: "Indigo",
+        chakra_6_location: "Centre du front, entre les sourcils",
+        chakra_6_responsibility: "Intuition, clairvoyance, imagination, pensée, vision intérieure.",
+        chakra_6_influence: "Développe la conscience et la capacité de voir l'essence des choses. Quand bloqué — pensées confuses, maux de tête, manque d'intuition, illusions.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Chakra Couronne", chakra_7_color: "Violet",
+        chakra_7_location: "Sommet de la tête",
+        chakra_7_responsibility: "Connexion avec la conscience supérieure, illumination, spiritualité, unité avec toute l'existence.",
+        chakra_7_influence: "Apporte état de paix, sens de la vie et expérience transcendante. Quand bloqué — dépression, sentiment de perte, détachement de la réalité.",
+        color: "Couleur", frequency: "Fréquence", location: "Emplacement", responsibility: "Responsable de", influence: "Influence"
+    },
+    de: {
+        nav_about: "ÜBER UNS", nav_chakras: "CHAKREN", nav_activation: "AKTIVIERUNG",
+        about_title: "ChakraFlow ist eine neue Methode zur bewussten Chakra-Aktivierung",
+        about_subtitle: "Stärken Sie Ihre Energiezentren, um den Fluss der Lebenskraft wiederherzustellen und innere Harmonie zu finden.",
+        about_cta: "Chakren Aktivieren",
+        about_what_title: "Was sind Chakren und warum sie aktivieren",
+        about_what_p1: "Das Wort 'Chakra' stammt aus dem alten Sanskrit und bedeutet 'Rad' oder 'Wirbel'. In der indischen und tibetischen Tradition sind dies Energiezentren des Körpers, durch die die Lebenskraft — Prana — fließt. Die ersten Erwähnungen von Chakren finden sich in den Vedas (um 1500 v. Chr.), und später wurden sie in Abhandlungen über Yoga und Tantra detailliert beschrieben.",
+        about_what_p2: "Nach dieser Lehre gibt es 7 Hauptchakren in einem Menschen — von der Basis der Wirbelsäule bis zur Krone des Kopfes. Jedes ist für einen bestimmten Aspekt des Lebens verantwortlich: körperliche Gesundheit, Emotionen, Intellekt, Kreativität, Liebe, Wille und Verbindung mit dem höheren Selbst.",
+        about_what_p3: "Wenn Chakren in Harmonie arbeiten, fließt die Energie frei — Sie fühlen sich kraftvoll, mit geistiger Klarheit und innerer Unterstützung. Wenn das Gleichgewicht gestört ist, entstehen Müdigkeit, Angst, Apathie oder sogar Krankheiten. Die Chakra-Aktivierung ist keine Mystik, sondern eine tiefe Arbeit mit sich selbst, die hilft, Ganzheit und Harmonie im Alltag wiederherzustellen.",
+        about_what_p4: "ChakraFlow bietet einen modernen Ansatz zu diesem alten Wissen und macht die Praxis für alle zugänglich.",
+        about_method_title: "Die ChakraFlow-Methode",
+        about_method_p: "Dies ist eine einfache und tiefgründige Praxis, die nur 7 Minuten dauert. Für jedes der 7 Chakren haben wir eine einzigartige Klangfrequenz und ein visuelles Bild ausgewählt. Sie müssen nur zwischen den Zentren wechseln und jedem genau eine Minute widmen — dem resonierenden Klang zuhören und sich auf das Bild konzentrieren. Dies 'stimmt' das Chakra sanft, beseitigt Blockaden und stellt den natürlichen Energiefluss ohne komplexe Meditationen und jahrelange Vorbereitung wieder her.",
+        chakras_title: "Sieben Energiezentren",
+        chakras_subtitle: "Erfahren Sie mehr über jedes Chakra und seinen Einfluss auf Ihr Leben",
+        activation_title: "Chakra-Aktivierung",
+        activation_subtitle: "Wählen Sie ein Chakra und beginnen Sie die Praxis",
+        activation_instruction: "Stellen Sie eine angenehme Lautstärke auf Ihrem Gerät ein, maximieren Sie die Bildschirmhelligkeit und richten Sie das Gerät auf den Bereich des zu aktivierenden Chakras. Es ist am besten, die Aktivierung mit dem unteren Muladhara-Chakra zu beginnen und allmählich zum oberen Sahasrara aufzusteigen. Die durchschnittliche Arbeitszeit mit jedem Chakra beträgt 1 Minute, aber Sie können die Zeit bei Bedarf verlängern.",
+        activation_btn: "Aktivierung Starten", activation_stop: "Stoppen",
+        footer_about: "Über ChakraFlow",
+        footer_about_text: "Ein moderner Ansatz zur alten Praxis der Chakra-Aktivierung.",
+        footer_links: "Links", footer_privacy: "Datenschutzrichtlinie",
+        footer_contact: "Kontaktieren Sie uns",
+        footer_email_placeholder: "E-Mail", footer_message_placeholder: "Nachricht", footer_send: "Senden",
+        cookie_text: "Wir verwenden Cookies, um die Leistung der Website zu verbessern.",
+        cookie_accept: "Akzeptieren", cookie_decline: "Ablehnen",
+        privacy_title: "Datenschutzrichtlinie",
+        privacy_p1: "ChakraFlow respektiert Ihre Privatsphäre.",
+        privacy_h1: "Gesammelte Informationen", privacy_p2: "Wir verwenden Cookies, um Benutzereinstellungen zu speichern.",
+        privacy_h2: "Datenverwendung", privacy_p3: "Gesammelte Daten werden ausschließlich zur Verbesserung der Benutzererfahrung verwendet.",
+        privacy_h3: "Ihre Rechte", privacy_p4: "Sie können die Verwendung von Cookies jederzeit ablehnen.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Wurzelchakra", chakra_1_color: "Rot",
+        chakra_1_location: "Basis der Wirbelsäule, Perineum",
+        chakra_1_responsibility: "Grundlegendes Überleben, physische Sicherheit, Instinkte, Verbindung mit Familie und Erde.",
+        chakra_1_influence: "Vermittelt Gefühl von Stabilität und Sicherheit. Wenn aus dem Gleichgewicht — Angst, Furcht, Probleme mit Geld und Gesundheit (Beine, Darm, Immunität).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Sakralchakra", chakra_2_color: "Orange",
+        chakra_2_location: "Unterbauch (3-4 cm unter dem Nabel)",
+        chakra_2_responsibility: "Emotionen, Vergnügen, Kreativität, Sexualität, Sensibilität.",
+        chakra_2_influence: "Bringt Lebensfreude, Flexibilität und Selbstakzeptanz. Wenn blockiert — Apathie, unterdrückte Emotionen, Probleme mit Fortpflanzungssystem und Nieren.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Solarplexus", chakra_3_color: "Gelb",
+        chakra_3_location: "Solarplexus-Bereich (zwischen Nabel und Brustbein)",
+        chakra_3_responsibility: "Persönliche Kraft, Wille, Selbstwertgefühl, Kontrolle, Zielerreichung.",
+        chakra_3_influence: "Gibt Selbstvertrauen und inneren Kern. Wenn aus dem Gleichgewicht — Unsicherheit, Wut, Probleme mit Magen-Darm-Trakt und Verdauung.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Herzchakra", chakra_4_color: "Grün",
+        chakra_4_location: "Zentrum der Brust, Herzbereich",
+        chakra_4_responsibility: "Liebe, Mitgefühl, Akzeptanz, Empathie, Vergebung.",
+        chakra_4_influence: "Öffnet die Fähigkeit zu lieben und die Welt zu akzeptieren. Wenn blockiert — Einsamkeit, Groll, Eifersucht, Herz- und Lungenkrankheiten.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Halschakra", chakra_5_color: "Hellblau",
+        chakra_5_location: "Hals, Nackenbereich",
+        chakra_5_responsibility: "Selbstausdruck, Kommunikation, Wahrheit, kreatives Sprechen.",
+        chakra_5_influence: "Hilft, die Wahrheit zu sagen und gehört zu werden. Wenn aus dem Gleichgewicht — Sprechangst, Stottern, häufige Halsschmerzen, Schilddrüsenprobleme.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Drittes Auge", chakra_6_color: "Indigo",
+        chakra_6_location: "Zentrum der Stirn, zwischen den Augenbrauen",
+        chakra_6_responsibility: "Intuition, Hellsichtigkeit, Vorstellungskraft, Denken, innere Sicht.",
+        chakra_6_influence: "Entwickelt Bewusstsein und die Fähigkeit, das Wesen der Dinge zu sehen. Wenn blockiert — verwirrte Gedanken, Kopfschmerzen, Mangel an Intuition, Illusionen.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Kronenchakra", chakra_7_color: "Violett",
+        chakra_7_location: "Scheitel des Kopfes",
+        chakra_7_responsibility: "Verbindung mit höherem Bewusstsein, Erleuchtung, Spiritualität, Einheit mit aller Existenz.",
+        chakra_7_influence: "Bringt Zustand des Friedens, Lebenssinn und transzendente Erfahrung. Wenn blockiert — Depression, Gefühl der Verlorenheit, Loslösung von der Realität.",
+        color: "Farbe", frequency: "Frequenz", location: "Ort", responsibility: "Verantwortlich für", influence: "Einfluss"
+    },
+    pt: {
+        nav_about: "SOBRE", nav_chakras: "CHAKRAS", nav_activation: "ATIVAÇÃO",
+        about_title: "ChakraFlow é um novo método de ativação consciente de chakras",
+        about_subtitle: "Fortaleça seus centros energéticos para restaurar o fluxo de força vital e encontrar harmonia interior.",
+        about_cta: "Ativar Chakras",
+        about_what_title: "O que são chakras e por que ativá-los",
+        about_what_p1: "A palavra 'chakra' vem do sânscrito antigo e significa 'roda' ou 'vórtice'. Nas tradições indiana e tibetana, são centros energéticos do corpo através dos quais flui a força vital — prana. As primeiras menções de chakras são encontradas nos Vedas (por volta de 1500 a.C.), e mais tarde foram detalhados em tratados de yoga e tantra.",
+        about_what_p2: "Segundo este ensinamento, há 7 chakras principais em uma pessoa — da base da coluna vertebral ao topo da cabeça. Cada um é responsável por um certo aspecto da vida: saúde física, emoções, intelecto, criatividade, amor, vontade e conexão com o Ser superior.",
+        about_what_p3: "Quando os chakras trabalham em harmonia, a energia flui livremente — você se sente vigoroso, com clareza mental e apoio interior. Se o equilíbrio é perturbado, surgem fadiga, ansiedade, apatia ou até doenças. A ativação de chakras não é misticismo, mas um trabalho profundo consigo mesmo que ajuda a restaurar a integridade e harmonia na vida cotidiana.",
+        about_what_p4: "ChakraFlow oferece uma abordagem moderna deste conhecimento antigo, tornando a prática acessível a todos.",
+        about_method_title: "O Método ChakraFlow",
+        about_method_p: "Esta é uma prática simples e profunda que leva apenas 7 minutos. Para cada um dos 7 chakras, selecionamos uma frequência sonora única e uma imagem visual. Você só precisa alternar entre os centros e dedicar exatamente um minuto a cada um — ouvir o som ressonante e focar na imagem. Isso 'afina' suavemente o chakra, remove bloqueios e restaura o fluxo natural de energia sem meditações complexas e anos de preparação.",
+        chakras_title: "Sete Centros Energéticos",
+        chakras_subtitle: "Saiba mais sobre cada chakra e sua influência em sua vida",
+        activation_title: "Ativação de Chakras",
+        activation_subtitle: "Escolha um chakra e comece a prática",
+        activation_instruction: "Defina um nível de volume confortável no seu dispositivo, maximize o brilho da tela e direcione o dispositivo para a área do chakra que está ativando. É melhor começar a ativação com o chakra inferior Muladhara e subir gradualmente até o superior Sahasrara. O tempo médio de trabalho com cada chakra é de 1 minuto, mas você pode aumentá-lo conforme necessário.",
+        activation_btn: "Iniciar Ativação", activation_stop: "Parar",
+        footer_about: "Sobre ChakraFlow",
+        footer_about_text: "Uma abordagem moderna da antiga prática de ativação de chakras.",
+        footer_links: "Links", footer_privacy: "Política de Privacidade",
+        footer_contact: "Contate-nos",
+        footer_email_placeholder: "Email", footer_message_placeholder: "Mensagem", footer_send: "Enviar",
+        cookie_text: "Usamos cookies para melhorar o desempenho do site.",
+        cookie_accept: "Aceitar", cookie_decline: "Recusar",
+        privacy_title: "Política de Privacidade",
+        privacy_p1: "ChakraFlow respeita sua privacidade.",
+        privacy_h1: "Informações coletadas", privacy_p2: "Usamos cookies para armazenar preferências do usuário.",
+        privacy_h2: "Uso de dados", privacy_p3: "Os dados coletados são usados exclusivamente para melhorar a experiência do usuário.",
+        privacy_h3: "Seus direitos", privacy_p4: "Você pode recusar o uso de cookies a qualquer momento.",
+        chakra_1_name: "Muladhara", chakra_1_subtitle: "Chakra Raiz", chakra_1_color: "Vermelho",
+        chakra_1_location: "Base da coluna vertebral, períneo",
+        chakra_1_responsibility: "Sobrevivência básica, segurança física, instintos, conexão com família e terra.",
+        chakra_1_influence: "Proporciona sensação de estabilidade e segurança. Quando desequilibrado — ansiedade, medo, problemas com dinheiro e saúde (pernas, intestinos, imunidade).",
+        chakra_2_name: "Svadhisthana", chakra_2_subtitle: "Chakra Sacral", chakra_2_color: "Laranja",
+        chakra_2_location: "Abdômen inferior (3-4 cm abaixo do umbigo)",
+        chakra_2_responsibility: "Emoções, prazer, criatividade, sexualidade, sensibilidade.",
+        chakra_2_influence: "Traz alegria de viver, flexibilidade e autoaceitação. Quando bloqueado — apatia, emoções reprimidas, problemas com sistema reprodutivo e rins.",
+        chakra_3_name: "Manipura", chakra_3_subtitle: "Plexo Solar", chakra_3_color: "Amarelo",
+        chakra_3_location: "Área do plexo solar (entre umbigo e esterno)",
+        chakra_3_responsibility: "Poder pessoal, vontade, autoestima, controle, realização de objetivos.",
+        chakra_3_influence: "Dá confiança e núcleo interno. Quando desequilibrado — insegurança, raiva, problemas com trato gastrointestinal e digestão.",
+        chakra_4_name: "Anahata", chakra_4_subtitle: "Chakra do Coração", chakra_4_color: "Verde",
+        chakra_4_location: "Centro do peito, área do coração",
+        chakra_4_responsibility: "Amor, compaixão, aceitação, empatia, perdão.",
+        chakra_4_influence: "Abre a capacidade de amar e aceitar o mundo. Quando bloqueado — solidão, ressentimento, ciúme, doenças cardíacas e pulmonares.",
+        chakra_5_name: "Vishuddha", chakra_5_subtitle: "Chakra da Garganta", chakra_5_color: "Azul claro",
+        chakra_5_location: "Garganta, área do pescoço",
+        chakra_5_responsibility: "Autoexpressão, comunicação, verdade, fala criativa.",
+        chakra_5_influence: "Ajuda a dizer a verdade e ser ouvido. Quando desequilibrado — medo de falar, gagueira, dores de garganta frequentes, problemas de tireoide.",
+        chakra_6_name: "Ajna", chakra_6_subtitle: "Terceiro Olho", chakra_6_color: "Índigo",
+        chakra_6_location: "Centro da testa, entre as sobrancelhas",
+        chakra_6_responsibility: "Intuição, clarividência, imaginação, pensamento, visão interior.",
+        chakra_6_influence: "Desenvolve consciência e capacidade de ver a essência das coisas. Quando bloqueado — pensamentos confusos, dores de cabeça, falta de intuição, ilusões.",
+        chakra_7_name: "Sahasrara", chakra_7_subtitle: "Chakra Coroa", chakra_7_color: "Violeta",
+        chakra_7_location: "Topo da cabeça",
+        chakra_7_responsibility: "Conexão com consciência superior, iluminação, espiritualidade, unidade com toda existência.",
+        chakra_7_influence: "Traz estado de paz, sentido da vida e experiência transcendente. Quando bloqueado — depressão, sensação de perda, desapego da realidade.",
+        color: "Cor", frequency: "Frequência", location: "Localização", responsibility: "Responsável por", influence: "Influência"
+    },
+    zh: {
+        nav_about: "关于", nav_chakras: "脉轮", nav_activation: "激活",
+        about_title: "ChakraFlow是一种全新的脉轮意识激活方法",
+        about_subtitle: "增强您的能量中心,恢复生命力流,找到内心和谐。立即开始您的转变。",
+        about_cta: "激活脉轮",
+        about_what_title: "什么是脉轮以及为什么要激活它们",
+        about_what_p1: "'脉轮'一词来自古梵语,意为'轮'或'漩涡'。在印度和西藏传统中,这些是身体的能量中心,生命力——气——通过它们流动。脉轮的最早提及见于《吠陀经》(约公元前1500年),后来在瑜伽和密宗论著中详细描述。",
+        about_what_p2: "根据这一教义,人体有7个主要脉轮——从脊柱底部到头顶。每一个都负责生活的某个方面:身体健康、情感、智力、创造力、爱、意志和与更高自我的连接。",
+        about_what_p3: "当脉轮和谐工作时,能量自由流动——您感到精力充沛、头脑清晰和内心支持。如果平衡被破坏,就会出现疲劳、焦虑、冷漠甚至疾病。脉轮激活不是神秘主义,而是与自己的深层工作,有助于恢复日常生活中的完整性和和谐。",
+        about_what_p4: "ChakraFlow为这一古老知识提供了现代方法,使练习对所有人都可及。",
+        about_method_title: "ChakraFlow方法",
+        about_method_p: "这是一个简单而深刻的练习,只需7分钟。为7个脉轮中的每一个,我们选择了独特的声音频率和视觉图像。您只需要在中心之间切换,并为每个中心花费一分钟——听共振的声音并专注于图像。这会温和地'调谐'脉轮,消除阻塞,恢复自然的能量流,无需复杂的冥想和多年的准备。",
+        chakras_title: "七个能量中心",
+        chakras_subtitle: "了解每个脉轮及其对您生活的影响",
+        activation_title: "脉轮激活",
+        activation_subtitle: "选择一个脉轮并开始练习",
+        activation_instruction: "在您的设备上设置舒适的音量级别,最大化屏幕亮度,并将设备对准您正在激活的脉轮区域。最好从下方的海底轮(Muladhara)开始激活,然后逐渐上升到上方的顶轮(Sahasrara)。每个脉轮的平均工作时间为1分钟,但您可以根据需要延长时间。",
+        activation_btn: "开始激活", activation_stop: "停止",
+        footer_about: "关于ChakraFlow",
+        footer_about_text: "脉轮激活古老实践的现代方法。",
+        footer_links: "链接", footer_privacy: "隐私政策",
+        footer_contact: "联系我们",
+        footer_email_placeholder: "电子邮件", footer_message_placeholder: "消息", footer_send: "发送",
+        cookie_text: "我们使用cookie来改善网站性能。",
+        cookie_accept: "接受", cookie_decline: "拒绝",
+        privacy_title: "隐私政策",
+        privacy_p1: "ChakraFlow尊重您的隐私。",
+        privacy_h1: "收集的信息", privacy_p2: "我们使用cookie存储用户偏好。",
+        privacy_h2: "数据使用", privacy_p3: "收集的数据专门用于改善用户体验。",
+        privacy_h3: "您的权利", privacy_p4: "您可以随时在浏览器设置中拒绝使用cookie。",
+        chakra_1_name: "海底轮", chakra_1_subtitle: "根轮", chakra_1_color: "红色",
+        chakra_1_location: "脊柱底部,会阴",
+        chakra_1_responsibility: "基本生存,身体安全,本能,与家庭和地球的连接。",
+        chakra_1_influence: "提供稳定感和安全感。失衡时——焦虑、恐惧、金钱和健康问题(腿、肠道、免疫)。",
+        chakra_2_name: "脐轮", chakra_2_subtitle: "骶轮", chakra_2_color: "橙色",
+        chakra_2_location: "下腹部(肚脐下方3-4厘米)",
+        chakra_2_responsibility: "情感、快乐、创造力、性、敏感性。",
+        chakra_2_influence: "带来生活乐趣、灵活性和自我接纳。阻塞时——冷漠、压抑情感、生殖系统和肾脏问题。",
+        chakra_3_name: "太阳神经丛轮", chakra_3_subtitle: "脐轮", chakra_3_color: "黄色",
+        chakra_3_location: "太阳神经丛区域(肚脐和胸骨之间)",
+        chakra_3_responsibility: "个人力量、意志、自尊、控制、目标达成。",
+        chakra_3_influence: "给予自信和内在核心。失衡时——不安全感、愤怒、胃肠道和消化问题。",
+        chakra_4_name: "心轮", chakra_4_subtitle: "心轮", chakra_4_color: "绿色",
+        chakra_4_location: "胸部中心,心脏区域",
+        chakra_4_responsibility: "爱、同情、接受、同理心、宽恕。",
+        chakra_4_influence: "打开爱和接受世界的能力。阻塞时——孤独、怨恨、嫉妒、心脏和肺部疾病。",
+        chakra_5_name: "喉轮", chakra_5_subtitle: "喉轮", chakra_5_color: "浅蓝色",
+        chakra_5_location: "喉咙,颈部区域",
+        chakra_5_responsibility: "自我表达、沟通、真理、创造性言语。",
+        chakra_5_influence: "帮助说真话并被听到。失衡时——说话恐惧、口吃、频繁喉咙痛、甲状腺问题。",
+        chakra_6_name: "第三眼轮", chakra_6_subtitle: "眉心轮", chakra_6_color: "靛蓝色",
+        chakra_6_location: "额头中心,眉毛之间",
+        chakra_6_responsibility: "直觉、千里眼、想象力、思维、内在视觉。",
+        chakra_6_influence: "发展意识和看到事物本质的能力。阻塞时——混乱思维、头痛、缺乏直觉、幻觉。",
+        chakra_7_name: "顶轮", chakra_7_subtitle: "冠轮", chakra_7_color: "紫色",
+        chakra_7_location: "头顶",
+        chakra_7_responsibility: "与更高意识连接、启蒙、灵性、与所有存在的统一。",
+        chakra_7_influence: "带来平静状态、生命意义和超越体验。阻塞时——抑郁、失落感、脱离现实。",
+        color: "颜色", frequency: "频率", location: "位置", responsibility: "负责", influence: "影响"
+    },
+    hi: {
+        nav_about: "के बारे में", nav_chakras: "चक्र", nav_activation: "सक्रियकरण",
+        about_title: "चक्रफ्लो चक्रों की जागरूक सक्रियता की एक नई विधि है",
+        about_subtitle: "जीवन शक्ति के प्रवाह को बहाल करने और आंतरिक सामंजस्य खोजने के लिए अपने ऊर्जा केंद्रों को बढ़ाएं। अभी अपना परिवर्तन शुरू करें।",
+        about_cta: "चक्र सक्रिय करें",
+        about_what_title: "चक्र क्या हैं और उन्हें क्यों सक्रिय करें",
+        about_what_p1: "'चक्र' शब्द प्राचीन संस्कृत से आया है और इसका अर्थ है 'पहिया' या 'भंवर'। भारतीय और तिब्बती परंपराओं में, ये शरीर के ऊर्जा केंद्र हैं जिनके माध्यम से जीवन शक्ति — प्राण — बहती है। चक्रों का पहला उल्लेख वेदों (लगभग 1500 ईसा पूर्व) में मिलता है, और बाद में योग और तंत्र के ग्रंथों में विस्तार से वर्णित किया गया।",
+        about_what_p2: "इस शिक्षा के अनुसार, एक व्यक्ति में 7 मुख्य चक्र होते हैं — रीढ़ की हड्डी के आधार से सिर के शीर्ष तक। प्रत्येक जीवन के एक निश्चित पहलू के लिए जिम्मेदार है: शारीरिक स्वास्थ्य, भावनाएं, बुद्धि, रचनात्मकता, प्रेम, इच्छाशक्ति और उच्चतर स्वयं से जुड़ाव।",
+        about_what_p3: "जब चक्र सामंजस्य में काम करते हैं, तो ऊर्जा स्वतंत्र रूप से बहती है — आप活力, मानस्पष्टता और आंतरिक_support महसूस करते हैं। यदि संतुलन बिगड़ जाता है, तो थकान, चिंता, उदासीनता या даже बीमारियां उत्पन्न होती हैं। चक्र सक्रियता रहस्यवाद नहीं है, बल्कि स्वयं के साथ गहरा काम है जो दैनिक जीवन में समग्रता और सामंजस्य को बहाल करने में मदद करता है।",
+        about_what_p4: "चक्रफ्लो इस प्राचीन ज्ञान के लिए एक आधुनिक दृष्टिकोण प्रदान करता है, जिससे अभ्यास सभी के लिए सुलभ हो जाता है।",
+        about_method_title: "चक्रफ्लो विधि",
+        about_method_p: "यह एक सरल और गहन अभ्यास है जिसमें केवल 7 मिनट लगते हैं। 7 चक्रों में से प्रत्येक के लिए, हमने एक अद्वितीय ध्वनि आवृत्ति और दृश्य छवि चुनी है। आपको बस केंद्रों के बीच स्विच करना है और प्रत्येक को एक मिनट देना है — अनुनाद ध्वनि सुनें और छवि पर ध्यान केंद्रित करें। यह चक्र को कोमलता से 'ट्यून' करता है, अवरोधों को हटाता है, और जटिल ध्यान और वर्षों की तैयारी के बिना प्राकृतिक ऊर्जा प्रवाह को बहाल करता है।",
+        chakras_title: "सात ऊर्जा केंद्र",
+        chakras_subtitle: "प्रत्येक चक्र और आपके जीवन पर इसके प्रभाव के बारे में और जानें",
+        activation_title: "चक्र सक्रियकरण",
+        activation_subtitle: "एक चक्र चुनें और अभ्यास शुरू करें",
+        activation_instruction: "अपने डिवाइस पर एक आरामदायक वॉल्यूम स्तर सेट करें, स्क्रीन की चमक को अधिकतम करें और डिवाइस को उस चक्र के क्षेत्र की ओर निर्देशित करें जिसे आप सक्रिय कर रहे हैं। सक्रियण निचले मूलाधार चक्र से शुरू करना और धीरे-धीरे ऊपरी सहस्रार तक बढ़ना सबसे अच्छा है। प्रत्येक चक्र के साथ औसत कार्य समय 1 मिनट है, लेकिन आप आवश्यकतानुसार समय बढ़ा सकते हैं।",
+        activation_btn: "सक्रियकरण शुरू करें", activation_stop: "रोकें",
+        footer_about: "चक्रफ्लो के बारे में",
+        footer_about_text: "चक्र सक्रियता की प्राचीन प्रथा के लिए एक आधुनिक दृष्टिकोण।",
+        footer_links: "लिंक", footer_privacy: "गोपनीयता नीति",
+        footer_contact: "हमसे संपर्क करें",
+        footer_email_placeholder: "ईमेल", footer_message_placeholder: "संदेश", footer_send: "भेजें",
+        cookie_text: "हम वेबसाइट के प्रदर्शन को बेहतर बनाने के लिए कुकीज़ का उपयोग करते हैं।",
+        cookie_accept: "स्वीकार करें", cookie_decline: "अस्वीकार करें",
+        privacy_title: "गोपनीयता नीति",
+        privacy_p1: "चक्रफ्लो आपकी गोपनीयता का सम्मान करता है।",
+        privacy_h1: "एकत्रित जानकारी", privacy_p2: "हम उपयोगकर्ता प्राथमिकताओं को संग्रहीत करने के लिए कुकीज़ का उपयोग करते हैं।",
+        privacy_h2: "डेटा उपयोग", privacy_p3: "एकत्रित डेटा का उपयोग विशेष रूप से उपयोगकर्ता अनुभव को बेहतर बनाने के लिए किया जाता है।",
+        privacy_h3: "आपके अधिकार", privacy_p4: "आप किसी भी समय अपने ब्राउज़र सेटिंग्स में कुकीज़ के उपयोग से इनकार कर सकते हैं।",
+        chakra_1_name: "मूलाधार", chakra_1_subtitle: "मूल चक्र", chakra_1_color: "लाल",
+        chakra_1_location: "रीढ़ की हड्डी का आधार, मूलाधार",
+        chakra_1_responsibility: "मूलभूत अस्तित्व, शारीरिक सुरक्षा,instincts, परिवार और पृथ्वी से जुड़ाव।",
+        chakra_1_influence: "स्थिरता और सुरक्षा की भावना प्रदान करता है। असंतुलित होने पर — चिंता, भय, पैसा और स्वास्थ्य समस्याएं (टांगें, आंतें, प्रतिरक्षा)।",
+        chakra_2_name: "स्वाधिष्ठान", chakra_2_subtitle: "त्रिक चक्र", chakra_2_color: "नारंगी",
+        chakra_2_location: "निचला उदर (नाभि से 3-4 सेमी नीचे)",
+        chakra_2_responsibility: "भावनाएं, आनंद, रचनात्मकता, यौनता, संवेदनशीलता।",
+        chakra_2_influence: "जीवन का आनंद, लचीलापन और आत्म-स्वीकृति लाता है। अवरुद्ध होने पर — उदासीनता, दबी हुई भावनाएं, प्रजनन प्रणाली और गुर्दे की समस्याएं।",
+        chakra_3_name: "मणिपूर", chakra_3_subtitle: "सौरplexus", chakra_3_color: "पीला",
+        chakra_3_location: "सौरplexus क्षेत्र (नाभि और उरोस्थि के बीच)",
+        chakra_3_responsibility: "व्यक्तिगत शक्ति, इच्छाशक्ति, आत्मसम्मान, नियंत्रण, लक्ष्य प्राप्ति।",
+        chakra_3_influence: "आत्मविश्वास और आंतरिक केंद्र देता है। असंतुलित होने पर — असुरक्षा, क्रोध, जठरांत्र और पाचन समस्याएं।",
+        chakra_4_name: "अनाहत", chakra_4_subtitle: "हृदय चक्र", chakra_4_color: "हरा",
+        chakra_4_location: "छाती का केंद्र, हृदय क्षेत्र",
+        chakra_4_responsibility: "प्रेम, करुणा, स्वीकृति, सहानुभूति, क्षमा।",
+        chakra_4_influence: "प्यार करने और दुनिया को स्वीकार करने की क्षमता खोलता है। अवरुद्ध होने पर — अकेलापन, कड़वाहट, ईर्ष्या, हृदय और फेफड़ों की बीमारियां।",
+        chakra_5_name: "विशुद्ध", chakra_5_subtitle: "कंठ चक्र", chakra_5_color: "आकाशीय नीला",
+        chakra_5_location: "गला, गर्दन क्षेत्र",
+        chakra_5_responsibility: "आत्म-अभिव्यक्ति, संचार, सत्य, रचनात्मक वाणी।",
+        chakra_5_influence: "सच बोलने और सुने जाने में मदद करता है। असंतुलित होने पर — बोलने का डर, हकलाना, बार-बार गले में दर्द, थायराइड समस्याएं।",
+        chakra_6_name: "आज्ञा", chakra_6_subtitle: "तीसरा नेत्र", chakra_6_color: "इंडिगो",
+        chakra_6_location: "माथे का केंद्र, भौंहों के बीच",
+        chakra_6_responsibility: "अंतर्ज्ञान, दूरदर्शिता, कल्पना, चिंतन, आंतरिक दृष्टि।",
+        chakra_6_influence: "जागरूकता और चीजों के सार को देखने की क्षमता विकसित करता है। अवरुद्ध होने पर — भ्रमित विचार, सिरदर्द, अंतर्ज्ञान की कमी, भ्रम।",
+        chakra_7_name: "सहस्रार", chakra_7_subtitle: "मुकुट चक्र", chakra_7_color: "बैंगनी",
+        chakra_7_location: "सिर के शीर्ष",
+        chakra_7_responsibility: "उच्चतर चेतना से जुड़ाव, ज्ञान, आध्यात्मिकता, सभी अस्तित्व के साथ एकता।",
+        chakra_7_influence: "शांति की स्थिति, जीवन का अर्थ और पारलौकिक अनुभव लाता है। अवरुद्ध होने पर — अवसाद, खोया हुआ एहसास, वास्तविकता से अलगाव।",
+        color: "रंग", frequency: "आवृत्ति", location: "स्थान", responsibility: "के लिए जिम्मेदार", influence: "प्रभाव"
+    }
+};
+
+const chakrasData = {
+    1: { color: '#dc2626', frequency: 396, nameKey: 'chakra_1_name', subtitleKey: 'chakra_1_subtitle' },
+    2: { color: '#ea580c', frequency: 417, nameKey: 'chakra_2_name', subtitleKey: 'chakra_2_subtitle' },
+    3: { color: '#eab308', frequency: 528, nameKey: 'chakra_3_name', subtitleKey: 'chakra_3_subtitle' },
+    4: { color: '#16a34a', frequency: 639, nameKey: 'chakra_4_name', subtitleKey: 'chakra_4_subtitle' },
+    5: { color: '#0ea5e9', frequency: 741, nameKey: 'chakra_5_name', subtitleKey: 'chakra_5_subtitle' },
+    6: { color: '#6366f1', frequency: 852, nameKey: 'chakra_6_name', subtitleKey: 'chakra_6_subtitle' },
+    7: { color: '#a855f7', frequency: 963, nameKey: 'chakra_7_name', subtitleKey: 'chakra_7_subtitle' }
+};
+
+const flags = {
+    en: 'https://flagcdn.com/w40/us.png',
+    es: 'https://flagcdn.com/w40/es.png',
+    it: 'https://flagcdn.com/w40/it.png',
+    fr: 'https://flagcdn.com/w40/fr.png',
+    de: 'https://flagcdn.com/w40/de.png',
+    pt: 'https://flagcdn.com/w40/pt.png',
+    ru: 'https://flagcdn.com/w40/ru.png',
+    zh: 'https://flagcdn.com/w40/cn.png',
+    hi: 'https://flagcdn.com/w40/in.png'
+};
+
+let currentLang = 'ru';
+let currentTheme = 'light';
+let currentChakra = 1;
+let isPlaying = false;
+let audioContext = null;
+let oscillator = null;
+let gainNode = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    detectLanguage();
+    detectTheme();
+    applyTranslations();
+    generateChakraCards();
+    generateActivationTabs();
+    selectChakra(1);
+    setupEventListeners();
+    checkCookies();
+});
+
+function detectLanguage() {
+    const browserLang = navigator.language.split('-')[0];
+    const supportedLangs = ['ru', 'en', 'es', 'it', 'fr', 'de', 'pt', 'zh', 'hi'];
+    currentLang = supportedLangs.includes(browserLang) ? browserLang : 'en';
+    updateLanguageButton();
+}
+
+function detectTheme() {
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        currentTheme = 'dark';
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+}
+
+function applyTranslations() {
+    const t = translations[currentLang];
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (t[key]) el.textContent = t[key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (t[key]) el.placeholder = t[key];
+    });
+    document.documentElement.lang = currentLang;
+}
+
+function updateLanguageButton() {
+    document.getElementById('currentLangFlag').src = flags[currentLang];
+    document.getElementById('currentLangCode').textContent = currentLang.toUpperCase();
+    document.querySelectorAll('.lang-option').forEach(opt => {
+        opt.classList.toggle('active', opt.getAttribute('data-lang') === currentLang);
+    });
+}
+
+function generateChakraCards() {
+    const grid = document.getElementById('chakrasGrid');
+    const t = translations[currentLang];
+    grid.innerHTML = '';
+    
+    for (let i = 1; i <= 7; i++) {
+        const chakra = chakrasData[i];
+        const card = document.createElement('div');
+        card.className = 'chakra-card';
+        card.innerHTML = `
+            <div class="chakra-header">
+                <div class="chakra-color" style="background: ${chakra.color}"></div>
+                <div>
+                    <div class="chakra-title">${t[chakra.nameKey]}</div>
+                    <div class="chakra-subtitle">${t[chakra.subtitleKey]}</div>
+                </div>
+            </div>
+            <div class="chakra-info"><strong>${t.color}:</strong> ${t['chakra_' + i + '_color']}</div>
+            <div class="chakra-info"><strong>${t.frequency}:</strong> ${chakra.frequency} Hz</div>
+            <div class="chakra-info"><strong>${t.location}:</strong> ${t['chakra_' + i + '_location']}</div>
+            <div class="chakra-info"><strong>${t.responsibility}:</strong> ${t['chakra_' + i + '_responsibility']}</div>
+            <div class="chakra-info"><strong>${t.influence}:</strong> ${t['chakra_' + i + '_influence']}</div>
+        `;
+        grid.appendChild(card);
+    }
+}
+
+function generateActivationTabs() {
+    const tabs = document.getElementById('activationTabs');
+    const t = translations[currentLang];
+    tabs.innerHTML = '';
+    for (let i = 1; i <= 7; i++) {
+        const chakra = chakrasData[i];
+        const tab = document.createElement('div');
+        tab.className = 'tab';
+        tab.setAttribute('data-chakra', i);
+        tab.innerHTML = `
+            <div class="tab-name">${t[chakra.nameKey]}</div>
+            <div class="tab-frequency">${chakra.frequency} Hz</div>
+        `;
+        tab.onclick = () => selectChakra(i);
+        tabs.appendChild(tab);
+    }
+}
+
+function selectChakra(num) {
+    currentChakra = num;
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', parseInt(tab.getAttribute('data-chakra')) === num);
+    });
+    const chakra = chakrasData[num];
+    document.getElementById('chakraCore').style.background = `radial-gradient(circle, ${chakra.color} 0%, ${chakra.color}88 100%)`;
+    document.querySelectorAll('.chakra-wave').forEach(wave => {
+        wave.style.background = `radial-gradient(circle, ${chakra.color}66 0%, ${chakra.color}00 70%)`;
+    });
+    if (isPlaying) {
+        stopChakra();
+        setTimeout(() => startChakra(), 100);
+    }
+}
+
+function setupEventListeners() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSection(link.getAttribute('data-section'));
+        });
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    const langBtn = document.getElementById('langToggle');
+    const langDropdown = document.getElementById('langDropdown');
+
+    langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        langDropdown.classList.toggle('show');
+        langBtn.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.language-selector')) {
+            langDropdown.classList.remove('show');
+            langBtn.classList.remove('open');
+        }
+    });
+
+    document.querySelectorAll('.lang-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentLang = option.getAttribute('data-lang');
+            applyTranslations();
+            generateChakraCards();
+            generateActivationTabs();
+            updateLanguageButton();
+            updateActivateBtnText();
+            langDropdown.classList.remove('show');
+            langBtn.classList.remove('open');
+        });
+    });
+
+    document.getElementById('activateBtn').addEventListener('click', toggleActivation);
+
+    document.getElementById('privacyModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('privacyModal')) closePrivacyModal();
+    });
+}
+
+function showSection(sectionId) {
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.getElementById(sectionId).classList.add('active');
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    const activeLink = document.querySelector(`[data-section="${sectionId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    window.scrollTo(0, 0);
+}
+
+function toggleTheme() {
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', currentTheme);
+}
+
+function toggleActivation() {
+    if (isPlaying) stopChakra();
+    else startChakra();
+}
+
+function updateActivateBtnText() {
+    const btn = document.getElementById('activateBtn');
+    const t = translations[currentLang];
+    btn.textContent = isPlaying ? t.activation_stop : t.activation_btn;
+}
+
+function startChakra() {
+    document.querySelectorAll('.chakra-wave').forEach(wave => wave.classList.add('active'));
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.value = chakrasData[currentChakra].frequency;
+    gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 2);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    oscillator.start();
+    isPlaying = true;
+    updateActivateBtnText();
+}
+
+function stopChakra() {
+    if (gainNode) {
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 1);
+    }
+    setTimeout(() => {
+        if (oscillator) { oscillator.stop(); oscillator.disconnect(); }
+    }, 1000);
+    document.querySelectorAll('.chakra-wave').forEach(wave => wave.classList.remove('active'));
+    isPlaying = false;
+    updateActivateBtnText();
+}
+
+function checkCookies() {
+    if (!localStorage.getItem('cookiesAccepted')) {
+        document.getElementById('cookieBanner').classList.add('show');
+    }
+}
+
+function acceptCookies() {
+    localStorage.setItem('cookiesAccepted', 'true');
+    document.getElementById('cookieBanner').classList.remove('show');
+}
+
+function declineCookies() {
+    localStorage.setItem('cookiesAccepted', 'false');
+    document.getElementById('cookieBanner').classList.remove('show');
+}
+
+function showPrivacyModal() { document.getElementById('privacyModal').classList.add('show'); }
+function closePrivacyModal() { document.getElementById('privacyModal').classList.remove('show'); }
+
+function handleContactSubmit(e) {
+    e.preventDefault();
+    alert('✓');
+    e.target.reset();
+}
+</script>
+</body>
+</html>
